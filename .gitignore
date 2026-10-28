@@ -1,0 +1,5 @@
+node_modules/
+.openai/
+work/
+.DS_Store
+*.log

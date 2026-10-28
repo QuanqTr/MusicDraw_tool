@@ -1,0 +1,197 @@
+{
+  "date": "2026-10-28",
+  "palette": "User supplied 13 pastel colors, exact hex values",
+  "format": {
+    "samples": 78,
+    "strokes": 1791,
+    "points": 56631,
+    "invalidCases": 29,
+    "passed": true
+  },
+  "vectorizerTests": 9,
+  "regionTests": 9,
+  "algorithmIntegrationTests": 3,
+  "domIntegration": {
+    "harness": "Happy DOM + @napi-rs/canvas; no browser; file-protocol fallback tracing",
+    "passed": 8,
+    "failed": 0,
+    "errors": [],
+    "results": [
+      {
+        "name": "Startup Fish metrics, palette, JSON dialog and native canvas draw",
+        "passed": true
+      },
+      {
+        "name": "Select-all palette apply, undo and redo update actual serialized project",
+        "passed": true
+      },
+      {
+        "name": "Padding change then undo restores source pixels and exact JSON geometry",
+        "passed": true
+      },
+      {
+        "name": "Pointer lasso recolors a partial region and preserves outline length",
+        "passed": true
+      },
+      {
+        "name": "Imported Fish source can be retraced despite pastel custom palette",
+        "passed": true
+      },
+      {
+        "name": "JSON export download imports back with exact geometry",
+        "passed": true
+      },
+      {
+        "name": "Actual PNG upload → trace creates valid normalized app JSON",
+        "passed": true
+      },
+      {
+        "name": "Light outline inverted preprocessing has no false white padding border",
+        "passed": true
+      }
+    ]
+  },
+  "example": {
+    "rasterToJson": true,
+    "roundtripSamePixels": true,
+    "canvas": {
+      "width": 680,
+      "height": 660
+    },
+    "vectorizer": {
+      "inputWidth": 680,
+      "inputHeight": 660,
+      "foregroundPixels": 14694,
+      "removedPixels": 0,
+      "cleanedForegroundPixels": 14694,
+      "skeletonPixels": 2149,
+      "pathCount": 19,
+      "pointCount": 298,
+      "iterations": 5,
+      "droppedShortPaths": 0
+    },
+    "output": {
+      "strokeCount": 28,
+      "pointCount": 316,
+      "occupiedCells": 97,
+      "noteCount": 60,
+      "instruments": [
+        "FLUTE",
+        "MARIMBA",
+        "SOFT_KEY",
+        "STRINGS",
+        "BELLS"
+      ],
+      "loopSeconds": 4,
+      "bounds": {
+        "minX": 0.11985294117647059,
+        "minY": 0.09015151515151515,
+        "maxX": 0.8595588235294118,
+        "maxY": 0.6643939393939394,
+        "x": 0.11985294117647059,
+        "y": 0.09015151515151515,
+        "width": 0.7397058823529412,
+        "height": 0.5742424242424242
+      }
+    },
+    "palette": [
+      {
+        "id": "SOFT_KEY",
+        "label": "Soft Key",
+        "color": "#FFB6D2",
+        "midiProgram": 4,
+        "isFree": true
+      },
+      {
+        "id": "MARIMBA",
+        "label": "Marimba",
+        "color": "#FFF0A8",
+        "midiProgram": 12,
+        "isFree": true
+      },
+      {
+        "id": "WARM_SYNTH",
+        "label": "Warm Synth",
+        "color": "#FFCBA4",
+        "midiProgram": 88,
+        "isFree": true
+      },
+      {
+        "id": "BELLS",
+        "label": "Bells",
+        "color": "#B8E8D0",
+        "midiProgram": 14,
+        "isFree": true
+      },
+      {
+        "id": "PLUCK",
+        "label": "Pluck",
+        "color": "#C5D9B8",
+        "midiProgram": 24,
+        "isFree": true
+      },
+      {
+        "id": "FLUTE",
+        "label": "Flute",
+        "color": "#AEBBFF",
+        "midiProgram": 73,
+        "isFree": true
+      },
+      {
+        "id": "STRINGS",
+        "label": "Strings",
+        "color": "#FF9FAE",
+        "midiProgram": 48,
+        "isFree": false
+      },
+      {
+        "id": "CHIME",
+        "label": "Chime",
+        "color": "#BFDFFF",
+        "midiProgram": 10,
+        "isFree": false
+      },
+      {
+        "id": "BASS",
+        "label": "Bass",
+        "color": "#C8B6FF",
+        "midiProgram": 38,
+        "isFree": false
+      },
+      {
+        "id": "EIGHT_BIT",
+        "label": "8 bit",
+        "color": "#FFF4D6",
+        "midiProgram": 80,
+        "isFree": false
+      },
+      {
+        "id": "ELECTRONIC_BASS",
+        "label": "Electronic Bass",
+        "color": "#A8E6E3",
+        "midiProgram": 39,
+        "isFree": false
+      },
+      {
+        "id": "GUITAR",
+        "label": "Guitar",
+        "color": "#E6C8FF",
+        "midiProgram": 25,
+        "isFree": false
+      },
+      {
+        "id": "SAXOPHONE",
+        "label": "Saxophone",
+        "color": "#83D4F7",
+        "midiProgram": 65,
+        "isFree": false
+      }
+    ]
+  },
+  "limits": {
+    "realBrowserLayoutVerified": false,
+    "androidVerified": false,
+    "onlinePublished": false,
+    "onlineBlocker": "Sites project not found for registered project"
+  }
+}

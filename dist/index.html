@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#253c32">
+  <meta name="description" content="Chuyển ảnh outline thành Draw Music JSON, chọn màu theo vùng và xem lại từ JSON ngay trong trình duyệt.">
+  <title>Outline Studio · Draw Music</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#" aria-label="Outline Studio"><span class="brand-mark">〰</span><span>Outline<span class="brand-light"> Studio</span></span><span class="version">01</span></a>
+  <span class="header-note">TỪ NÉT VẼ ĐẾN GIAI ĐIỆU</span>
+  <div class="header-actions"><span class="local-badge"><i></i> Xử lý trên máy bạn</span><button class="icon-button" id="helpBtn" title="Hướng dẫn" aria-label="Hướng dẫn">?</button></div>
+</header>
+<section class="intro"><div><div class="eyebrow">DRAW MUSIC / JSON WORKSPACE</div><h1>Mỗi nét vẽ, một âm sắc.</h1><p>Đưa outline vào. Chọn màu theo vùng. Mang nét vẽ sang Draw Music.</p></div><div class="intro-actions"><button class="button ghost" id="importBtn">↥ Nhập JSON</button><button class="button primary" id="exportBtn">↓ Xuất JSON</button></div></section>
+<main class="workspace">
+  <aside class="panel input-panel">
+    <div class="section-label"><span class="step-number">01</span> NGUỒN HÌNH</div>
+    <button class="dropzone" id="uploadBtn"><span class="upload-symbol">↥</span><strong>Thêm ảnh outline</strong><span>Chọn hoặc kéo ảnh vào đây</span><small>PNG, JPG, WEBP, SVG · tối đa 20 MB</small></button>
+    <button class="sample-button" id="demoBtn"><span class="fish-icon">◁</span><span>Thử với mẫu Fish<small>JSON gốc từ ứng dụng</small></span><b>↗</b></button>
+    <div class="divider"></div>
+    <div class="section-label"><span class="step-number">02</span> TÁCH NÉT</div>
+    <label class="range-label" for="threshold">Ngưỡng nét tối <output id="thresholdOut">180</output></label><input id="threshold" type="range" min="30" max="245" value="180">
+    <label class="range-label" for="simplify">Giản lược đường <output id="simplifyOut">0.8 px</output></label><input id="simplify" type="range" min="0" max="3" step="0.1" value="0.8">
+    <label class="range-label" for="noise">Bỏ đốm nhỏ <output id="noiseOut">5 px</output></label><input id="noise" type="range" min="1" max="40" value="5">
+    <div class="split-fields"><label>Nét ngắn nhất<input type="number" id="minLength" min="0" max="100" value="0" aria-label="Độ dài nét ngắn nhất"></label><label>Lề ảnh (%)<input type="number" id="padding" min="0" max="25" value="3" aria-label="Lề ảnh phần trăm"></label></div>
+    <label class="check"><input type="checkbox" id="invert"> Nét sáng trên nền tối</label>
+    <button class="button primary full" id="traceBtn"><span>↝</span> Chuyển ảnh thành nét</button>
+    <p class="microcopy" id="traceHint">Giữ đường tâm của nét, tránh tạo hai viền.</p>
+    <details class="canvas-settings" open><summary>Kích thước canvas</summary><div class="split-fields"><label>Rộng (px)<input id="canvasW" type="number" min="240" max="2400" value="720"></label><label>Cao (px)<input id="canvasH" type="number" min="240" max="2400" value="700"></label></div><button id="fitBtn" class="text-button">↔ Dùng tỉ lệ ảnh nguồn</button><p class="microcopy">Dùng cùng tỉ lệ canvas trong app để giữ dáng hình. Nét app rộng 6 pixel.</p></details>
+  </aside>
+  <section class="center-panel">
+    <div class="editor-toolbar"><div class="segmented" aria-label="Công cụ chọn"><button id="selectTool" class="active" aria-pressed="true">↖ Chọn nét</button><button id="lassoTool" aria-pressed="false">◌ Khoanh vùng</button></div><div class="edit-actions"><button id="undoBtn" class="icon-button" title="Hoàn tác (Ctrl Z)" aria-label="Hoàn tác" disabled>↶</button><button id="redoBtn" class="icon-button" title="Làm lại (Ctrl Shift Z)" aria-label="Làm lại" disabled>↷</button><button id="clearSelectionBtn" class="text-button">Bỏ chọn</button></div></div>
+    <div class="canvas-grid">
+      <article class="canvas-card"><div class="card-label"><span><i class="neutral-dot"></i> ẢNH NGUỒN</span><span id="sourceSize">680 × 660</span></div><div class="canvas-well" id="sourceWell"><canvas id="sourceCanvas" width="680" height="660" aria-label="Ảnh outline nguồn"></canvas><div class="canvas-placeholder" id="sourcePlaceholder" hidden>Thêm ảnh outline để bắt đầu</div></div><div class="card-foot"><span id="sourceName">Mẫu Fish</span><span>Ảnh đã căn vào canvas</span></div></article>
+      <article class="canvas-card result-card"><div class="card-label"><span><i class="green-dot"></i> CANVAS TỪ JSON</span><span class="json-badge">JSON v1</span></div><div class="canvas-well" id="resultWell"><canvas id="resultCanvas" width="680" height="660" aria-label="Bản xem trước được dựng lại từ JSON"></canvas><canvas id="selectionCanvas" width="680" height="660" tabindex="0" aria-label="Chọn nét hoặc kéo để khoanh vùng đổi màu"></canvas></div><div class="card-foot"><span id="selectionHint">Bấm vào nét để chọn</span><label class="tiny-check"><input type="checkbox" id="overlaySource"> Chồng ảnh</label></div></article>
+    </div>
+    <div class="status-strip"><span id="statusDot" class="green-dot"></span><span id="statusText" role="status" aria-live="polite">Đang mở mẫu Fish…</span><button class="text-button" id="jsonBtn">{ } Xem JSON</button></div>
+    <div class="bottom-panel"><div class="project-title"><label for="projectTitle">TÊN DỰ ÁN</label><input id="projectTitle" value="Fish" maxlength="120"></div><div class="metric"><strong id="strokeCount">13</strong><span>nét vẽ</span></div><div class="metric"><strong id="pointCount">541</strong><span>điểm nét</span></div><div class="metric"><strong id="noteCount">55</strong><span>nốt nhạc</span></div><div class="metric"><strong id="loopTime">4.00s</strong><span>một vòng</span></div></div>
+    <div class="format-note"><span>✓</span><p><strong>Hình được dựng từ chính JSON xuất ra.</strong> Tọa độ giữ nét liên tục; lưới 24 × 32 chỉ dùng cho phần nhạc.</p><button class="text-button" id="pngBtn">↓ Ảnh PNG</button></div>
+  </section>
+  <aside class="panel color-panel">
+    <div class="section-label"><span class="step-number">03</span> MÀU & ÂM SẮC</div><p class="panel-description">13 màu pastel theo bảng màu của bạn.</p>
+    <div id="palette" class="palette" aria-label="Bảng màu nhạc cụ"></div>
+    <div class="selection-summary"><span id="selectedCount">Chưa chọn nét</span><strong id="chosenName">Marimba</strong></div>
+    <button id="applyColorBtn" class="button primary full" disabled>Áp dụng màu đã chọn</button>
+    <div class="selection-shortcuts"><button id="selectAllBtn" class="text-button">Chọn tất cả</button><button id="deleteBtn" class="text-button danger" disabled>Xóa nét</button></div>
+    <p class="microcopy">Khoanh vùng để đổi màu riêng một phần nét. Màu áp dụng lên đường outline, không tô đặc bên trong.</p>
+    <div class="divider"></div><div class="section-label">THIẾT LẬP NHẠC</div>
+    <div class="split-fields"><label>Tempo (BPM)<input id="bpm" type="number" min="60" max="200" value="120"></label><label>Nốt gốc (MIDI)<input id="rootMidi" type="number" min="0" max="100" value="48"></label></div>
+    <label class="field-label" for="scale">Thang âm</label><select id="scale"></select>
+    <div class="export-detail"><span class="file-icon">{ }</span><div><strong>Draw Music JSON</strong><span>version 1 · 24 bước · 32 hàng</span></div></div>
+  </aside>
+</main>
+<footer><span>OUTLINE STUDIO</span><span>Ảnh của bạn được xử lý tại trình duyệt. Không gửi ảnh lên server.</span><button id="helpFooter" class="text-button">Cách sử dụng ↗</button></footer>
+<input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden><input id="jsonInput" type="file" accept=".json,application/json" hidden>
+<dialog id="jsonDialog"><div class="dialog-head"><div><div class="eyebrow">DỮ LIỆU XUẤT</div><h2>JSON dựng nên hình này.</h2></div><button class="icon-button close-dialog" aria-label="Đóng">×</button></div><p class="dialog-copy">13 màu tùy chỉnh · points chuẩn hóa · cells được tính bằng Bresenham.</p><pre id="jsonPreview"></pre><div class="dialog-actions"><button id="copyJsonBtn" class="button ghost">Sao chép JSON</button><button id="dialogExportBtn" class="button primary">↓ Tải file JSON</button></div></dialog>
+<dialog id="helpDialog"><div class="dialog-head"><div><div class="eyebrow">HƯỚNG DẪN NHANH</div><h2>Từ ảnh sang canvas.</h2></div><button class="icon-button close-dialog" aria-label="Đóng">×</button></div><ol class="help-steps"><li><strong>Thêm ảnh outline rõ nét.</strong><p>Nét tối, nền sáng hoặc trong suốt cho kết quả tốt. Chỉnh ngưỡng để giữ chi tiết, rồi bấm chuyển ảnh thành nét.</p></li><li><strong>Chọn nét hoặc khoanh vùng.</strong><p>Chọn một trong 13 màu, rồi áp dụng. Khoanh vùng cắt nét tại ranh giới để phần bên ngoài giữ màu cũ. Shift + bấm để chọn nhiều nét.</p></li><li><strong>Kiểm tra và tải JSON.</strong><p>Canvas bên phải được dựng lại từ JSON. Có thể nhập lại file vừa tải để kiểm tra hoặc lưu thêm ảnh PNG.</p></li></ol><div class="help-note"><strong>Để giữ hình khi sang app</strong><p>JSON lưu tọa độ theo tỉ lệ, không lưu kích thước canvas. Dùng cùng tỉ lệ rộng/cao với canvas app. Preview áp dụng nét 6 pixel, đầu nét tròn, alpha 200/255 như bản 1.8; khử răng cưa giữa trình duyệt và Android có thể khác nhẹ.</p><p>Màu trong JSON được xác định bằng tên nhạc cụ. App cần dùng cùng bảng màu pastel tùy chỉnh để hiển thị trùng màu với tool.</p><p>Bản app 1.8 đã kiểm tra chưa có nút nhập JSON. Tool tạo đúng định dạng dự án; việc đưa file vào app là bước riêng.</p></div><div class="dialog-actions"><button class="button primary close-dialog">Bắt đầu vẽ màu</button></div></dialog>
+<div id="toast" class="toast" role="alert" hidden></div>
+<script src="music-format.js"></script><script src="vectorizer.js"></script><script src="region-tools.js"></script><script src="sample-fish.js"></script><script src="app.js"></script>
+</body></html>
