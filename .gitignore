@@ -1,5 +1,8 @@
 node_modules/
 .openai/
+.vercel/
+.env
+.env.*
 work/
 .DS_Store
 *.log

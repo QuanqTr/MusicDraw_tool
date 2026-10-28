@@ -14,6 +14,18 @@ python -m http.server 8000 --bind 127.0.0.1 --directory dist
 
 Sau đó mở `http://127.0.0.1:8000`. Lệnh cần Python có sẵn trên máy. Khi mở trực tiếp bằng `file:`, tool vẫn hoạt động; bước tách nét chạy trên luồng giao diện nên có thể khựng trong lúc xử lý.
 
+## Triển khai trên Vercel
+
+Repository có sẵn `vercel.json` cho website tĩnh, không cần cài dependency hay chạy build.
+
+- Repository: `QuanqTr/MusicDraw_tool`, nhánh production `main`.
+- Root Directory: thư mục gốc repository (`./`).
+- Framework Preset: **Other**.
+- Output Directory: **dist**.
+- Build Command và Install Command: để trống; không cần biến môi trường.
+
+Trong Vercel, import repository này vào team đích và deploy. Cấu hình trong repository chọn sẵn thư mục `dist`. Khi Git integration đã kết nối, các lần push tiếp theo lên `main` có thể cập nhật website tự động.
+
 ## Cách dùng
 
 1. Bấm **Thêm ảnh outline** hoặc kéo ảnh vào ô nguồn. Hỗ trợ PNG, JPG, WEBP và SVG được trình duyệt đọc như ảnh. Nét tối trên nền sáng hoặc nền trong suốt cho kết quả tốt nhất.
