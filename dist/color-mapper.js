@@ -47,6 +47,26 @@
     return { id: nearest.id, neutral: false };
   }
 
+  function sourceColors(image, invert) {
+    const bins = Array.from({ length: 36 }, () => ({ weight: 0, rgb: [0, 0, 0] }));
+    for (let i = 0; i < image.data.length; i += 4) {
+      const alpha = image.data[i + 3] / 255, background = invert ? 0 : 255;
+      const rgb = [0, 1, 2].map(c => image.data[i + c] * alpha + background * (1 - alpha));
+      const chroma = Math.max(...rgb) - Math.min(...rgb);
+      if (chroma < 18) continue;
+      const color = hsv(rgb), bin = bins[Math.round(color.h / 10) % bins.length];
+      // Ink-colored core pixels dominate partially transparent/antialiased edges.
+      const weight = (chroma / 255) ** 2;
+      bin.weight += weight;
+      for (let c = 0; c < 3; c++) bin.rgb[c] += rgb[c] * weight;
+    }
+    const largest = Math.max(...bins.map(bin => bin.weight));
+    return bins.filter(bin => bin.weight > 0 && bin.weight >= largest * .005).map(bin => {
+      const rgb = bin.rgb.map(value => value / bin.weight);
+      return { rgb, hsv: hsv(rgb) };
+    });
+  }
+
   function compact(points) {
     const result = [];
     for (const p of points) {
@@ -101,7 +121,8 @@
     const neutralInstrument = palette.some(p => p.id === opt.neutralInstrument) ? opt.neutralInstrument : palette.some(p => p.id === 'BASS') ? 'BASS' : palette[0].id;
     const step = option(opt.sampleStep, 1, .5, 2), radius = Math.round(option(opt.sampleRadius, 2, 0, 5));
     const minimum = option(opt.minRunLength, 5, 0, 30), maxSamples = option(opt.maxSamples, 1500000, 100, 3000000);
-    const stats = { inputPaths: paths.length, outputPaths: 0, splitCount: 0, sampledPoints: 0, neutralSamples: 0, uncertainSamples: 0, instrumentCounts: {} };
+    const sourcePalette = sourceColors(image, opt.invert);
+    const stats = { inputPaths: paths.length, outputPaths: 0, splitCount: 0, sampledPoints: 0, neutralSamples: 0, uncertainSamples: 0, detectedSourceColors: sourcePalette.length, instrumentCounts: {} };
     const warnings = [], result = [];
     function sample(point) {
       if (++stats.sampledPoints > maxSamples) throw new Error('Quá nhiều điểm để ghép màu. Hãy giảm kích thước ảnh hoặc tăng giản lược đường.');
@@ -119,6 +140,17 @@
         if (score > strength) { strength = score; best = rgb; }
       }
       if (!best) { stats.uncertainSamples++; return neutralInstrument; }
+      const color = hsv(best);
+      if (color.c >= 14 && color.s >= .085) {
+        let closest = null, distance = 8;
+        for (const candidate of sourcePalette) {
+          let delta = Math.abs(color.h - candidate.hsv.h); delta = Math.min(delta, 360 - delta);
+          if (delta < distance) { distance = delta; closest = candidate; }
+        }
+        // Reuse one source-color representative so antialiasing on a uniform
+        // blue stroke cannot alternate between two nearly equal pastel choices.
+        if (closest) best = closest.rgb;
+      }
       const matched = match(best, palette, neutralInstrument);
       if (matched.neutral) stats.neutralSamples++;
       return matched.id;

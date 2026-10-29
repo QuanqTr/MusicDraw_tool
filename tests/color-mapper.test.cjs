@@ -60,6 +60,13 @@ test('short antialias-like color speckles do not fragment a long uniform run', (
   const result=C.colorize([[[10/240,.5],[230/240,.5]]],im.data(),{palette,minRunLength:5});
   assert.equal(result.paths.length,1);
 });
+test('a resampled blue curve near a palette boundary keeps one consistent color', () => {
+  const im=image(360,300);im.ctx.strokeStyle='#339FFF';im.ctx.lineWidth=5.5;im.ctx.beginPath();im.ctx.arc(180,150,115,0,Math.PI*1.8);im.ctx.stroke();
+  const traced=V.vectorize(im.data(),{colorAware:true,simplify:.8,minPathLength:0});
+  const result=C.colorize(traced.paths,im.data(),{palette});
+  assert.equal(result.paths.length,1);
+  assert.equal(new Set(result.paths.map(p=>p.instrument)).size,1);
+});
 test('closed loop remains closed and neutral strokes disclose the palette limitation', () => {
   const im=image(120,120);im.ctx.strokeStyle='#00B5B8';im.ctx.beginPath();im.ctx.arc(60,60,36,0,Math.PI*2);im.ctx.stroke();
   const traced=V.vectorize(im.data(),{colorAware:true,simplify:.5,minPathLength:0});
