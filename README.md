@@ -2,6 +2,18 @@
 
 Tool chuyển ảnh outline thành nét vẽ, đổi màu từng nét hoặc từng vùng, rồi xuất JSON dự án theo định dạng Draw Music 1.8. Canvas kết quả được dựng lại từ chính JSON xuất ra.
 
+Website: https://music-draw-tool-quanqtrs-projects.vercel.app (có thể cần đăng nhập Vercel theo cấu hình bảo vệ hiện tại).
+
+## Dán ảnh và tự nhận diện màu
+
+- Chụp màn hình hoặc copy ảnh, bấm vào trang rồi nhấn **Ctrl+V** (Mac: **Cmd+V**). Tool tự đọc ảnh, tách nét và ghép màu. Không cần lưu ảnh thành file trước.
+- Có thể bấm **Dán ảnh** trên trình duyệt hỗ trợ đọc clipboard. Nếu trình duyệt từ chối quyền hoặc mở offline, dùng Ctrl+V; tool không tự đọc clipboard khi chưa có thao tác của bạn.
+- **Tự nhận diện màu từ ảnh** được bật mặc định. Mỗi đoạn nét lấy màu từ ảnh nguồn rồi chọn màu gần nhất trong 13 màu pastel, ưu tiên sắc độ để xanh ngọc, xanh dương, hồng, cam và vàng giữ cùng nhóm màu. Một nét có nhiều màu được chia thành các đoạn tương ứng.
+- Chế độ tự màu nhận cả nét màu sáng như vàng, không chỉ các pixel tối. Với ảnh tải từ file, bấm **Chuyển ảnh thành nét** để áp dụng. Tắt chế độ tự màu nếu muốn toàn bộ nét dùng một nhạc cụ đã chọn.
+- Đây là ghép màu tương đối: bảng màu pastel không thể giữ đúng độ đậm của ảnh gốc. Màu đen/xám được ghép sang Bass vì bảng hiện tại không có xám. Có thể chọn nét hoặc khoanh vùng để chỉnh lại sau khi ghép.
+- Màu áp dụng trên các nét, không tô đặc bên trong các vùng kín. Mảng tô đặc lớn, ảnh chụp thực tế và nền nhiều màu không phải đầu vào tối ưu.
+- Dán văn bản vào ô tên dự án vẫn hoạt động bình thường. URL hoặc mã HTML trong clipboard không được dùng để tải ảnh qua mạng.
+
 ## Mở tool
 
 Mở `dist/index.html` bằng trình duyệt hiện đại. Tool chạy offline, không cần cài thư viện hay backend. Giữ nguyên các tệp trong thư mục `dist`.
@@ -53,7 +65,9 @@ Tool hiển thị số nét, số điểm, số nốt sau khi gộp ô và thờ
 - Kiểm thử gồm tải PNG → tách nét → khoanh vùng → đổi màu → xuất JSON → nhập lại, cùng hoàn tác/làm lại và ảnh đảo nền. Ảnh Canvas trước xuất và sau nhập lại có dữ liệu PNG giống hệt nhau trong cùng bộ dựng kiểm thử.
 - Điều khiển trình duyệt bị tắt trong phiên này nên chưa xác nhận bố cục trong trình duyệt thực tế. Chưa kiểm thử trên Android. Các kết quả trên không phải cam kết pixel-identical giữa trình duyệt và Android.
 
-Xem `verification.json` để biết chi tiết kiểm thử. Bản bàn giao có thể chạy offline; việc xuất bản online chưa hoàn tất vì Sites báo không tìm thấy dự án đã đăng ký.
+Xem `verification.json` để biết các kiểm tra của bản ban đầu. Website hiện được triển khai trên Vercel từ nhánh `main`; bản offline vẫn hoạt động.
+
+Kiểm thử cho bản có clipboard/tự màu được lưu trực tiếp trong `tests/`. Chạy `npm ci` rồi `npm test` với Node.js 20 trở lên. Có thể đặt biến `MUSICDRAW_PNG_FIXTURE` trỏ tới PNG cục bộ để kiểm tra thêm ảnh riêng mà không đưa ảnh vào repository. Runtime của website không cần cài dependency; các thư viện npm chỉ phục vụ kiểm thử DOM và Canvas.
 
 ## Bảng màu tùy chỉnh
 

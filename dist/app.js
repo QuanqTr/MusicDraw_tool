@@ -194,36 +194,46 @@
     const paths = state.polygon ? R.recolor(state.project.strokes, state.polygon, '__REMOVE__').paths.filter(p => p.instrument !== '__REMOVE__') : state.project.strokes.filter((p, i) => !state.selected.has(i));
     setPaths(paths); clearSelection(false); refresh(); status('Đã xóa phần được chọn. Có thể hoàn tác.');
   }
+  function vectorizeLocally(imageData, options) {
+    const result = OutlineVectorizer.vectorize(imageData, options);
+    if (!options.autoColors) return result;
+    const colors = OutlineColors.colorize(result.paths, imageData, { palette: F.PALETTE, invert: options.invert });
+    return { ...result, coloredPaths: colors.paths, colorStats: colors.stats, warnings: [...result.warnings, ...colors.warnings] };
+  }
   async function runVectorizer(imageData, options) {
-    if (location.protocol === 'file:') return OutlineVectorizer.vectorize(imageData, options);
-    try {
-      if (!worker) worker = new Worker('worker.js');
+    if (location.protocol === 'file:') return vectorizeLocally(imageData, options);
+    if (!worker) {
+      try { worker = new Worker('worker.js'); }
+      catch (_) { return vectorizeLocally(imageData, options); }
+    }
       const id = ++jobId;
       return await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => { worker?.terminate(); worker = null; reject(new Error('Ảnh quá phức tạp. Hãy giảm kích thước hoặc tăng mức bỏ đốm nhỏ.')); }, 45000);
         worker.onmessage = event => { if (event.data.id !== id) return; clearTimeout(timeout); event.data.error ? reject(new Error(event.data.error)) : resolve(event.data.result); };
-        worker.onerror = () => { clearTimeout(timeout); worker?.terminate(); worker = null; try { resolve(OutlineVectorizer.vectorize(imageData, options)); } catch (e) { reject(e); } };
+        worker.onerror = () => { clearTimeout(timeout); worker?.terminate(); worker = null; try { resolve(vectorizeLocally(imageData, options)); } catch (e) { reject(e); } };
         worker.postMessage({ id, imageData, options });
       });
-    } catch (error) { throw error; }
   }
   async function trace() {
     if (state.busy) return;
     if (!state.source) { $('imageInput').click(); return; }
-    loadGeneration++; prepareRaster(); state.busy = true; document.body.classList.add('busy'); $('traceBtn').disabled = true; $('importBtn').disabled = true; $('exportBtn').disabled = true; status('Đang tìm đường tâm và dựng JSON…');
+    loadGeneration++; prepareRaster(); state.busy = true; document.body.classList.add('busy'); $('traceBtn').disabled = true; $('importBtn').disabled = true; $('exportBtn').disabled = true; $('pasteBtn').disabled = true; status($('autoColors').checked ? 'Đang tìm đường tâm, nhận diện màu và dựng JSON…' : 'Đang tìm đường tâm và dựng JSON…');
     try {
       await new Promise(resolve => setTimeout(resolve, 30));
-      const result = await runVectorizer(raster, { threshold: Number($('threshold').value), invert: $('invert').checked, simplify: Number($('simplify').value), minComponentSize: Number($('noise').value), minPathLength: Number($('minLength').value) });
+      const autoColors = $('autoColors').checked;
+      const result = await runVectorizer(raster, { threshold: Number($('threshold').value), invert: $('invert').checked, simplify: Number($('simplify').value), minComponentSize: Number($('noise').value), minPathLength: Number($('minLength').value), colorAware: autoColors, autoColors, palette: F.PALETTE });
       if (!result.paths.length) throw new Error('Chưa tìm thấy nét. Thử tăng ngưỡng nét tối, giảm bỏ đốm hoặc bật đảo nền.');
-      remember(); setPaths(result.paths.map(points => ({ points, instrument: state.instrument, tool: 'BRUSH' })));
+      const paths = autoColors ? result.coloredPaths : result.paths.map(points => ({ points, instrument: state.instrument, tool: 'BRUSH' }));
+      remember(); setPaths(paths);
       clearSelection(false); refresh();
-      status(`Đã tách ${result.paths.length} nét · ${state.stats.pointCount} điểm · có thể bắt đầu chọn màu.`);
+      const colorCount = new Set(paths.map(p => p.instrument)).size;
+      status(autoColors ? `Đã tách ${paths.length} nét · tự ghép ${colorCount} màu gần nhất · có thể chọn vùng để chỉnh thêm.` : `Đã tách ${paths.length} nét · ${state.stats.pointCount} điểm · có thể bắt đầu chọn màu.`);
       if (result.warnings.length) toast(result.warnings.join(' · '));
       $('traceHint').textContent = `${raster.width} × ${raster.height} px xử lý · ${result.stats.skeletonPixels.toLocaleString('vi-VN')} pixel đường tâm`;
     } catch (error) { fail(error); }
-    finally { state.busy = false; document.body.classList.remove('busy'); $('traceBtn').disabled = false; $('importBtn').disabled = false; $('exportBtn').disabled = !state.project?.strokes.length; }
+    finally { state.busy = false; document.body.classList.remove('busy'); $('traceBtn').disabled = false; $('importBtn').disabled = false; $('pasteBtn').disabled = false; $('exportBtn').disabled = !state.project?.strokes.length; }
   }
-  async function loadImage(file) {
+  async function loadImage(file, options = {}) {
     if (state.busy) return toast('Đợi chuyển ảnh hoàn tất rồi chọn ảnh khác.');
     if (!file) return;
     const generation = ++loadGeneration;
@@ -234,12 +244,41 @@
       const image = new Image(); await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error('Không đọc được ảnh. Thử xuất lại dưới dạng PNG.')); image.src = url; });
       if (generation !== loadGeneration || state.busy) return;
       if (!image.naturalWidth || !image.naturalHeight || image.naturalWidth * image.naturalHeight > 50000000) throw new Error('Ảnh quá lớn. Hãy giảm về dưới 50 megapixel.');
-      state.source = image; state.sourceName = file.name; state.width = 720; state.height = Math.max(240, Math.min(2400, Math.round(720 * image.naturalHeight / image.naturalWidth)));
+      state.source = image; state.sourceName = options.name || file.name; state.width = 720; state.height = Math.max(240, Math.min(2400, Math.round(720 * image.naturalHeight / image.naturalWidth)));
       $('canvasW').value = state.width; $('canvasH').value = state.height; state.padding = 3; $('padding').value = 3;
-      state.project = F.makeProject([], { title: file.name.replace(/\.[^.]+$/, ''), selectedInstrument: state.instrument });
+      state.project = F.makeProject([], { title: (options.name || file.name).replace(/\.[^.]+$/, ''), selectedInstrument: state.instrument });
       state.undo = []; state.redo = []; syncMetadata(); prepareRaster(); clearSelection(false); refresh();
       status('Đã đọc ảnh. Bấm “Chuyển ảnh thành nét” để tạo JSON.');
     } finally { URL.revokeObjectURL(url); }
+    if (options.autoTrace && generation === loadGeneration && !state.busy) await trace();
+  }
+  function clipboardImage(clipboard) {
+    if (!clipboard) return null;
+    for (const item of Array.from(clipboard.items || [])) {
+      if (item.kind === 'file' && /^image\//i.test(item.type || '')) {
+        const file = item.getAsFile?.(); if (file) return file;
+      }
+    }
+    return Array.from(clipboard.files || []).find(file => /^image\//i.test(file.type || '')) || null;
+  }
+  async function pasteClipboard() {
+    if (state.busy) return toast('Đợi chuyển ảnh hoàn tất rồi dán ảnh mới.');
+    if (!navigator.clipboard?.read || !window.isSecureContext) return toast('Bấm vào trang rồi nhấn Ctrl+V để dán ảnh chụp màn hình.');
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find(value => /^image\//i.test(value));
+        if (!type) continue;
+        const blob = await item.getType(type);
+        const suffix = type.split('/')[1]?.replace('jpeg', 'jpg').replace('svg+xml', 'svg') || 'png';
+        await loadImage(new File([blob], `clipboard.${suffix}`, { type }), { name: 'Ảnh clipboard', autoTrace: true });
+        return;
+      }
+      toast('Clipboard chưa có ảnh. Chụp/copy ảnh rồi nhấn Ctrl+V trên trang.');
+    } catch (error) {
+      if (error.name === 'NotAllowedError' || error.name === 'SecurityError') toast('Chưa được phép đọc clipboard. Bạn vẫn có thể dán bằng Ctrl+V trên trang.');
+      else throw error;
+    }
   }
   async function loadJson(file) {
     if (state.busy) return toast('Đợi chuyển ảnh hoàn tất rồi nhập JSON.');
@@ -276,7 +315,7 @@
     }
     const scaleNames = { PENTATONIC: 'Ngũ cung trưởng', MAJOR: 'Trưởng', MINOR: 'Thứ', BLUES: 'Blues', CHROMATIC: 'Chromatic', MINOR_PENTATONIC: 'Ngũ cung thứ', HARMONIC_MINOR: 'Thứ hòa âm', DORIAN: 'Dorian', PHRYGIAN: 'Phrygian', LYDIAN: 'Lydian', MIXOLYDIAN: 'Mixolydian' };
     for (const scale of Object.keys(F.SCALES)) { const option = document.createElement('option'); option.value = scale; option.textContent = scaleNames[scale]; $('scale').appendChild(option); }
-    $('uploadBtn').onclick = () => $('imageInput').click(); $('importBtn').onclick = () => $('jsonInput').click();
+    $('uploadBtn').onclick = () => $('imageInput').click(); $('importBtn').onclick = () => $('jsonInput').click(); $('pasteBtn').onclick = safe(pasteClipboard);
     $('imageInput').onchange = safe(async e => { await loadImage(e.target.files[0]); e.target.value = ''; });
     $('jsonInput').onchange = safe(async e => { await loadJson(e.target.files[0]); e.target.value = ''; });
     $('demoBtn').onclick = safe(demo); $('traceBtn').onclick = safe(trace); $('exportBtn').onclick = safe(exportJson); $('dialogExportBtn').onclick = safe(exportJson);
@@ -321,6 +360,15 @@
       if (event.key === 'Escape') clearSelection();
       if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); deleteSelection(); }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') { event.preventDefault(); $('selectAllBtn').click(); }
+    }));
+    document.addEventListener('paste', safe(async event => {
+      // A normal text paste (e.g. into the project title) stays with the browser.
+      // Image data comes only from the user's paste event; HTML image URLs are never fetched.
+      const file = clipboardImage(event.clipboardData);
+      if (!file || document.querySelector('dialog[open]')) return;
+      event.preventDefault();
+      if (state.busy) return toast('Đợi chuyển ảnh hoàn tất rồi dán ảnh mới.');
+      await loadImage(file, { name: `Ảnh clipboard · ${file.name || 'screenshot.png'}`, autoTrace: true });
     }));
     document.addEventListener('dragover', event => { event.preventDefault(); $('uploadBtn').classList.add('dragover'); });
     document.addEventListener('dragleave', event => { if (!event.relatedTarget) $('uploadBtn').classList.remove('dragover'); });

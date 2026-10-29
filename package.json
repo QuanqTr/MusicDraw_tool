@@ -1,0 +1,16 @@
+{
+  "name": "outline-studio-draw-music",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Browser-local outline to Draw Music JSON with clipboard image paste and automatic palette matching",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "1.0.13",
+    "happy-dom": "21.0.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

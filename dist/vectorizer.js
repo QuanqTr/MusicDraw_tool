@@ -130,8 +130,17 @@
     for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
       const i = (y * width + x) * 4, alpha = image.data[i + 3] / 255;
       // Transparent pixels are white. Alpha-zero black does not become an outline.
-      const luminance = (0.2126 * image.data[i] + 0.7152 * image.data[i + 1] + 0.0722 * image.data[i + 2]) * alpha + 255 * (1 - alpha);
-      if (opt.invert ? luminance > 255 - threshold : luminance < threshold) {
+      const red = image.data[i] * alpha + 255 * (1 - alpha);
+      const green = image.data[i + 1] * alpha + 255 * (1 - alpha);
+      const blue = image.data[i + 2] * alpha + 255 * (1 - alpha);
+      const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+      const darkest = Math.min(red, green, blue), lightest = Math.max(red, green, blue);
+      // Bright yellow and pastel outlines can be lighter than the grayscale
+      // threshold. Color-aware mode also accepts visibly chromatic pixels while
+      // excluding white and near-neutral paper. The default mask is unchanged.
+      const colored = opt.colorAware === true && lightest - darkest >= 18 &&
+        (opt.invert ? lightest > 30 : darkest < 245);
+      if ((opt.invert ? luminance > 255 - threshold : luminance < threshold) || colored) {
         const px = x + 1, py = y + 1;
         mask[py * stride + px] = 1; foregroundPixels++;
         if (px < minX) minX = px; if (px > maxX) maxX = px;
@@ -201,5 +210,5 @@
     return { paths, stats, warnings };
   }
 
-  root.OutlineVectorizer = Object.freeze({ vectorize, version: '1.0.0' });
+  root.OutlineVectorizer = Object.freeze({ vectorize, version: '1.1.0' });
 })(typeof globalThis !== 'undefined' ? globalThis : window);
